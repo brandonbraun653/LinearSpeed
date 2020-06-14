@@ -29,9 +29,10 @@ Macros and Literals
 Constants and Variables
 -------------------------------------------------------------------------------*/
 static constexpr uint32_t displayUpdateRate = 200;       // How often the display updates its data (ms)
-static constexpr uint32_t isrDebouncingTime = 15;        // How long the software debounce time is for pulse events (ms)
+static constexpr uint32_t isrDebouncingTime = 2;        // How long the software debounce time is for pulse events (ms)
 static constexpr uint32_t mathUpdateRate    = 100;       // How often to update the math associated with this program
 static constexpr uint32_t serialBaud        = 921600;    // Baud rate
+static constexpr uint32_t wheelRadius      = 2;    // Radius of wheel connected to axel on which encoder wheel is mounted
 
 /*-------------------------------------------------
 Screen Digital Pins:
@@ -68,6 +69,7 @@ static uint32_t linearRate;       // Rate of speed (m/s)
 
 static uint32_t lastDisplayUpdateTime;    // Last time the screen was updated
 static uint32_t lastMathUpdateTime;       // Last time math section was run
+static uint32_t previousPulseCount;       // Pulse count last time the math section was run
 
 /*-------------------------------------------------
 Module Objects
@@ -111,6 +113,8 @@ void setup()
   isrDebounceStart      = 0;
   pulsePerSecond         = 0;
   linearRate            = 0;
+  previousPulseCount     = 0;
+
 
   /*-------------------------------------------------
   Attatch the ISR routine that counts input pulses
@@ -165,8 +169,11 @@ void loop()
   if ( ( millis() - lastMathUpdateTime ) > mathUpdateRate )
   {
     // TODO: Do mathy things here
-    pulsePerSecond = 0;
-    linearRate     = 0;
+    pulsePerSecond = millis()-lastMathUpdateTime;
+    linearRate     = ceil((2*3.141592654/20) * pulsePerSecond * wheelRadius);
+
+    previousPulseCount = pulseCount;
+    lastMathUpdateTime = millis();
 
     /*-------------------------------------------------
     TODO: Format the output data to CSV
