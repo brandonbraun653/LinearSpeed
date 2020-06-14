@@ -20,19 +20,19 @@
 /*-------------------------------------------------------------------------------
 Macros and Literals
 -------------------------------------------------------------------------------*/
-#define ROW_HEIGHT  ( 10 )              // Pixels
-#define ROW0        ( 0 * ROW_HEIGHT )
-#define ROW1        ( 1 * ROW_HEIGHT )
-#define ROW2        ( 2 * ROW_HEIGHT )
+#define ROW_HEIGHT ( 10 )    // Pixels
+#define ROW0 ( 0 * ROW_HEIGHT )
+#define ROW1 ( 1 * ROW_HEIGHT )
+#define ROW2 ( 2 * ROW_HEIGHT )
 
 /*-------------------------------------------------------------------------------
 Constants and Variables
 -------------------------------------------------------------------------------*/
 static constexpr uint32_t displayUpdateRate = 200;       // How often the display updates its data (ms)
-static constexpr uint32_t isrDebouncingTime = 2;        // How long the software debounce time is for pulse events (ms)
+static constexpr uint32_t isrDebouncingTime = 2;         // How long the software debounce time is for pulse events (ms)
 static constexpr uint32_t mathUpdateRate    = 100;       // How often to update the math associated with this program
 static constexpr uint32_t serialBaud        = 921600;    // Baud rate
-static constexpr uint32_t wheelRadius      = 2;    // Radius of wheel connected to axel on which encoder wheel is mounted
+static constexpr float wheelRadius          = 2;         // Radius of wheel connected to axel on which encoder wheel is mounted
 
 /*-------------------------------------------------
 Screen Digital Pins:
@@ -63,9 +63,9 @@ static uint32_t saveISRDebounceStart;         // Cache: Time when the debouncing
 /*-------------------------------------------------
 User Variables
 -------------------------------------------------*/
-static uint32_t pulseCount;       // Tracks number of pulse events
-static uint32_t pulsePerSecond;    // Tracks pulse events per update cycle
-static uint32_t linearRate;       // Rate of speed (m/s)
+static uint32_t pulseCount;        // Tracks number of pulse events
+static float pulsePerSecond;       // Tracks pulse events per update cycle
+static uint32_t linearRate;        // Rate of speed (m/s)
 
 static uint32_t lastDisplayUpdateTime;    // Last time the screen was updated
 static uint32_t lastMathUpdateTime;       // Last time math section was run
@@ -111,9 +111,9 @@ void setup()
   lastMathUpdateTime    = millis();
   pulseCount            = 0;
   isrDebounceStart      = 0;
-  pulsePerSecond         = 0;
+  pulsePerSecond        = 0;
   linearRate            = 0;
-  previousPulseCount     = 0;
+  previousPulseCount    = 0;
 
 
   /*-------------------------------------------------
@@ -169,8 +169,11 @@ void loop()
   if ( ( millis() - lastMathUpdateTime ) > mathUpdateRate )
   {
     // TODO: Do mathy things here
-    pulsePerSecond = millis()-lastMathUpdateTime;
-    linearRate     = ceil((2*3.141592654/20) * pulsePerSecond * wheelRadius);
+    pulsePerSecond = millis() - lastMathUpdateTime;
+    linearRate     = ceil( ( 2.0f * PI / 20.0f ) * pulsePerSecond * wheelRadius );
+    // Jarrod, what is this 20? Generally in programming we don't like magic numbers. Probably should
+    // make a #define up at the top of the file like I did with PI and give it a meaningful name.
+
 
     previousPulseCount = pulseCount;
     lastMathUpdateTime = millis();
@@ -196,7 +199,7 @@ void loop()
 
     /* Print out the pulses per second */
     printBuffer.fill( 0 );
-    snprintf( printBuffer.data(), printBuffer.size(), "Pulse Per Second: %d", pulsePerSecond );
+    snprintf( printBuffer.data(), printBuffer.size(), "Pulse Per Second: %2.3f", pulsePerSecond );
     display.drawString( 0, ROW1, String( printBuffer.data() ) );
 
     /* Print out the calculated rate of speed */
