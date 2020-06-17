@@ -32,7 +32,7 @@ static constexpr uint32_t displayUpdateRate = 200;       // How often the displa
 static constexpr uint32_t isrDebouncingTime = 2;         // How long the software debounce time is for pulse events (ms)
 static constexpr uint32_t mathUpdateRate    = 100;       // How often to update the math associated with this program
 static constexpr uint32_t serialBaud        = 921600;    // Baud rate
-static constexpr float wheelRadius          = 2;         // Radius of wheel connected to axel on which encoder wheel is mounted
+static constexpr float wheelRadius          = 1.0f;         // Radius of wheel connected to axel on which encoder wheel is mounted
 
 /*-------------------------------------------------
 Screen Digital Pins:
@@ -65,8 +65,8 @@ User Variables
 -------------------------------------------------*/
 static uint32_t pulseCount;        // Tracks number of pulse events
 static float pulsePerSecond;       // Tracks pulse events per update cycle
-static uint32_t linearRate;        // Rate of speed (m/s)
-
+static float linearRate;        // Rate of speed (m/s)
+static float distanceTraveled;   // Total linear distance traveled
 static uint32_t lastDisplayUpdateTime;    // Last time the screen was updated
 static uint32_t lastMathUpdateTime;       // Last time math section was run
 static uint32_t previousPulseCount;       // Pulse count last time the math section was run
@@ -111,8 +111,9 @@ void setup()
   lastMathUpdateTime    = millis();
   pulseCount            = 0;
   isrDebounceStart      = 0;
-  pulsePerSecond        = 0;
-  linearRate            = 0;
+  pulsePerSecond        = 0.0f;
+  linearRate            = 0.0f;
+  distanceTraveled      = 0.0f;
   previousPulseCount    = 0;
 
 
@@ -161,6 +162,14 @@ void loop()
   {
     isrFired = false;
     pulseCount++;
+
+    pulsePerSecond = 1.0f/((millis() - lastMathUpdateTime)/1000.0f);
+    linearRate = (( 2.0f * PI / 20.0f ) * pulsePerSecond) * wheelRadius;
+    distanceTraveled = distanceTraveled + linearRate * ((millis() - lastMathUpdateTime)/1000.0f);
+
+    Serial.write(sniprintf(printBuffer.data(), printBuffer.size(),"%d,%d",millis(),pulseCount);
+
+    lastMathUpdateTime = millis();
   }
 
   /*-------------------------------------------------
@@ -169,14 +178,14 @@ void loop()
   if ( ( millis() - lastMathUpdateTime ) > mathUpdateRate )
   {
     // TODO: Do mathy things here
-    pulsePerSecond = millis() - lastMathUpdateTime;
-    linearRate     = ceil( ( 2.0f * PI / 20.0f ) * pulsePerSecond * wheelRadius );
+    // duration = (millis()-lastMathUpdateTime)/((1/encoderFrequency)*1000.0f);
+    // linearRate     =  (( 2.0f * PI / 20.0f )/duration) * wheelRadius;
     // Jarrod, what is this 20? Generally in programming we don't like magic numbers. Probably should
     // make a #define up at the top of the file like I did with PI and give it a meaningful name.
 
 
-    previousPulseCount = pulseCount;
-    lastMathUpdateTime = millis();
+    // previousPulseCount = pulseCount;
+    // lastMathUpdateTime = millis();
 
     /*-------------------------------------------------
     TODO: Format the output data to CSV
@@ -199,12 +208,12 @@ void loop()
 
     /* Print out the pulses per second */
     printBuffer.fill( 0 );
-    snprintf( printBuffer.data(), printBuffer.size(), "Pulse Per Second: %2.3f", pulsePerSecond );
+    snprintf( printBuffer.data(), printBuffer.size(), "Distance Traveled: %2.3f", distanceTraveled );
     display.drawString( 0, ROW1, String( printBuffer.data() ) );
 
     /* Print out the calculated rate of speed */
     printBuffer.fill( 0 );
-    snprintf( printBuffer.data(), printBuffer.size(), "Speed (m/s): %d", linearRate );
+    snprintf( printBuffer.data(), printBuffer.size(), "Speed (in/s): %2.3f", linearRate );
     display.drawString( 0, ROW2, String( printBuffer.data() ) );
 
     /* Push the data to the display */
