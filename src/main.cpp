@@ -163,11 +163,18 @@ void loop()
     isrFired = false;
     pulseCount++;
 
-    pulsePerSecond = 1.0f/((millis() - lastMathUpdateTime)/1000.0f);
-    linearRate = (( 2.0f * PI / 20.0f ) * pulsePerSecond) * wheelRadius;
-    distanceTraveled = distanceTraveled + linearRate * ((millis() - lastMathUpdateTime)/1000.0f);
+    pulsePerSecond   = 1.0f / ( ( millis() - lastMathUpdateTime ) / 1000.0f );
+    linearRate       = ( ( 2.0f * PI / 20.0f ) * pulsePerSecond ) * wheelRadius;
+    distanceTraveled = distanceTraveled + linearRate * ( ( millis() - lastMathUpdateTime ) / 1000.0f );
 
-    Serial.write(sniprintf(printBuffer.data(), printBuffer.size(),"%d,%d",millis(),pulseCount);
+    /*-------------------------------------------------
+    1. Force null termination
+    2. Format the string
+    3. Write the output using the buffer pointer.
+    -------------------------------------------------*/
+    printBuffer.fill( 0 );
+    snprintf( printBuffer.data(), printBuffer.size(), "%lu,%d\n", millis(), pulseCount );
+    Serial.write( printBuffer.data() );
 
     lastMathUpdateTime = millis();
   }
